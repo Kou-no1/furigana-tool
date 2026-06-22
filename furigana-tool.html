@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ふりがな先生 — ふり仮名自動付与ツール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#2A7FAF;--sky-light:#E8F4FD;--sky-mid:#7EC8E3;--sky-dark:#1A5576;--sun:#FFD166;--sun-dark:#C88A00;--leaf:#4CAF50;--leaf-light:#EDFAED;--coral:#FF6B6B;--coral-dark:#C94444;--n50:#F8F9FA;--n100:#EEF0F2;--n200:#D6D9DE;--n400:#9AA0A8;--n700:#3D4451;--n900:#1A1D23;--r:12px;--rs:8px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'M PLUS Rounded 1c',sans-serif;background:linear-gradient(160deg,#EDF6FF 0%,#F4FCEF 50%,#FFF9E8 100%);min-height:100vh;color:var(--n900);}
+#loader{position:fixed;inset:0;background:rgba(255,255,255,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:14px;}
+.spin{width:52px;height:52px;border:4px solid var(--n200);border-top-color:var(--sky);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#lmsg{font-size:15px;font-weight:700;color:var(--sky-dark);}
+#lsub{font-size:12px;color:var(--n400);}
+header{background:var(--sky);padding:13px 24px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.hlogo{width:40px;height:40px;background:var(--sun);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+header h1{color:#fff;font-size:19px;font-weight:700;}
+header p{color:rgba(255,255,255,.75);font-size:11px;margin-top:1px;}
+.hbadge{margin-left:auto;background:rgba(255,255,255,.18);color:#fff;font-size:11px;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+.wrap{max-width:1120px;margin:0 auto;padding:20px 16px;display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start;}
+.panel{background:#fff;border-radius:var(--r);border:1.5px solid var(--n100);box-shadow:0 2px 10px rgba(0,0,0,.06);overflow:hidden;margin-bottom:16px;}
+.panel:last-child{margin-bottom:0;}
+.ph{padding:11px 15px;background:var(--n50);border-bottom:1.5px solid var(--n100);display:flex;align-items:center;gap:8px;}
+.phi{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.ph h2{font-size:13px;font-weight:700;color:var(--n700);}
+.pb{padding:14px 15px;}
+textarea{width:100%;height:170px;border:1.5px solid var(--n200);border-radius:var(--rs);padding:10px 12px;font-family:'M PLUS Rounded 1c',sans-serif;font-size:14px;line-height:1.8;resize:vertical;color:var(--n900);background:var(--n50);outline:none;transition:border-color .2s;}
+textarea:focus{border-color:var(--sky-mid);background:#fff;}
+.samples{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.sl{font-size:11px;color:var(--n400);}
+.sb{font-family:'M PLUS Rounded 1c',sans-serif;font-size:11px;padding:3px 9px;border:1.5px solid var(--sky-mid);border-radius:20px;background:var(--sky-light);color:var(--sky-dark);cursor:pointer;transition:all .15s;}
+.sb:hover{background:var(--sky-mid);color:#fff;}
+.slabel{font-size:12px;font-weight:700;color:var(--n700);margin-bottom:6px;display:flex;align-items:center;gap:4px;}
+.tip{font-size:10px;font-weight:400;color:var(--n400);}
+.sgroup{margin-bottom:13px;}
+.ggrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;}
+.gb{font-family:'M PLUS Rounded 1c',sans-serif;font-size:11px;font-weight:500;padding:7px 3px;border-radius:var(--rs);border:1.5px solid var(--n200);background:#fff;color:var(--n700);cursor:pointer;text-align:center;transition:all .15s;}
+.gb:hover{border-color:var(--sky-mid);color:var(--sky-dark);}
+.gb.on{background:var(--sky);border-color:var(--sky-dark);color:#fff;}
+.gb[data-g="0"].on{background:var(--coral);border-color:var(--coral-dark);}
+#gdesc{margin-top:7px;padding:7px 10px;background:var(--sky-light);border-radius:var(--rs);font-size:11px;color:var(--sky-dark);}
+.mtoggle{display:flex;border-radius:var(--rs);overflow:hidden;border:1.5px solid var(--n200);}
+.mb{flex:1;font-family:'M PLUS Rounded 1c',sans-serif;font-size:11px;font-weight:500;padding:8px 4px;border:none;background:#fff;cursor:pointer;color:var(--n400);transition:all .15s;line-height:1.35;text-align:center;}
+.mb.on{background:var(--leaf);color:#fff;}
+.srow{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.srow label{font-size:12px;color:var(--n700);min-width:76px;}
+.srow input[type=range]{flex:1;accent-color:var(--sky);}
+.sv{font-size:12px;font-weight:700;color:var(--sky-dark);min-width:38px;text-align:right;}
+.run{width:100%;margin-top:13px;font-family:'M PLUS Rounded 1c',sans-serif;font-size:15px;font-weight:700;padding:12px;border-radius:var(--rs);border:none;background:var(--sky);color:#fff;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.run:hover{background:var(--sky-dark);transform:translateY(-1px);}
+.run:active{transform:none;}
+.run:disabled{background:var(--n200);color:var(--n400);cursor:not-allowed;transform:none;}
+.rpanel{position:sticky;top:16px;}
+.ptbar{padding:10px 14px;background:var(--n50);border-bottom:1.5px solid var(--n100);display:flex;align-items:center;gap:8px;}
+.pinfo{font-size:12px;color:var(--n400);margin-left:auto;}
+.pbtn{font-family:'M PLUS Rounded 1c',sans-serif;font-size:12px;font-weight:700;padding:7px 13px;border-radius:var(--rs);border:1.5px solid var(--sun-dark);background:var(--sun);color:#5A3800;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;}
+.pbtn:hover{background:var(--sun-dark);color:#fff;}
+.parea{min-height:300px;padding:20px 22px;}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;gap:9px;color:var(--n400);}
+.empty .ei{font-size:46px;opacity:.35;}
+.empty p{font-size:13px;}
+#rout{font-family:'M PLUS Rounded 1c',sans-serif;font-size:16px;white-space:pre-wrap;word-break:break-all;display:none;line-height:2.8;}
+#rout ruby{ruby-align:center;}
+#rout rt{color:var(--sky-dark);font-weight:500;font-size:0.55em;}
+.stats{display:flex;gap:8px;padding:0 14px 13px;}
+.stat{flex:1;background:var(--n50);border-radius:var(--rs);padding:6px 8px;text-align:center;}
+.stat .v{font-size:18px;font-weight:700;color:var(--sky-dark);}
+.stat .l{font-size:10px;color:var(--n400);}
+@media print{
+  body{background:#fff!important;}
+  header,.wrap>div:first-child,.ptbar,.stats,#loader{display:none!important;}
+  .wrap{display:block!important;padding:0!important;max-width:100%!important;}
+  .rpanel{position:static!important;box-shadow:none!important;border:none!important;border-radius:0!important;}
+  .panel{border:none!important;box-shadow:none!important;}
+  .parea{padding:12mm 18mm!important;}
+  #rout{display:block!important;font-size:13pt!important;}
+  #rout rt{font-size:6.5pt!important;}
+  @page{size:A4 portrait;margin:0;}
+}
+@media(max-width:780px){.wrap{grid-template-columns:1fr;}.rpanel{position:static;}}
+</style>
+</head>
+<body>
+<div id="loader">
+  <div class="spin"></div>
+  <div id="lmsg">辞書データを読み込んでいます…</div>
+  <div id="lsub">kuromoji.js 辞書ファイル（約4MB）をCDNから取得中</div>
+</div>
+<header>
+  <div class="hlogo">📖</div>
+  <div><h1>ふりがな先生</h1><p>ふり仮名自動付与ツール — 配布プリント作成支援</p></div>
+  <span class="hbadge">🔒 データ流出ゼロ・ブラウザ内完結</span>
+</header>
+<div class="wrap">
+  <div>
+    <div class="panel">
+      <div class="ph"><div class="phi" style="background:#E8F4FD">✏️</div><h2>テキストを入力</h2></div>
+      <div class="pb">
+        <textarea id="itxt" placeholder="ここに文章を貼り付けてください。&#10;例：太陽は東から昇り、西に沈みます。"></textarea>
+        <div class="samples">
+          <span class="sl">サンプル：</span>
+          <button class="sb" onclick="setSample(1)">小1向け</button>
+          <button class="sb" onclick="setSample(2)">小4向け</button>
+          <button class="sb" onclick="setSample(3)">小6向け</button>
+          <button class="sb" onclick="setSample(4)">外国籍児童</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="phi" style="background:#FFF3D0">⚙️</div><h2>ふりがな設定</h2></div>
+      <div class="pb">
+        <div class="sgroup">
+          <div class="slabel">学年フィルタ <span class="tip">— この学年未満の漢字にはふりがなを振らない</span></div>
+          <div class="ggrid">
+            <button class="gb" data-g="0" onclick="setGrade(0)">全部振る</button>
+            <button class="gb" data-g="1" onclick="setGrade(1)">1年以上</button>
+            <button class="gb" data-g="2" onclick="setGrade(2)">2年以上</button>
+            <button class="gb" data-g="3" onclick="setGrade(3)">3年以上</button>
+            <button class="gb on" data-g="4" onclick="setGrade(4)">4年以上</button>
+            <button class="gb" data-g="5" onclick="setGrade(5)">5年以上</button>
+            <button class="gb" data-g="6" onclick="setGrade(6)">6年以上</button>
+            <button class="gb" data-g="7" onclick="setGrade(7)">中学以上</button>
+          </div>
+          <div id="gdesc">📘 4年生向け：1〜3年で習う漢字にはふりがなを振らず、4年以上の漢字にだけ振ります</div>
+        </div>
+        <div class="sgroup">
+          <div class="slabel">ルビモード</div>
+          <div class="mtoggle">
+            <button class="mb on" id="mb-total" onclick="setMode('total')">総ルビ<br><span style="font-size:10px;opacity:.8">全漢字に振る</span></button>
+            <button class="mb" id="mb-para" onclick="setMode('para')">パラルビ<br><span style="font-size:10px;opacity:.8">難読漢字のみ</span></button>
+          </div>
+        </div>
+        <div class="sgroup">
+          <div class="slabel">表示調整</div>
+          <div class="srow"><label>ルビ文字サイズ</label><input type="range" id="sruby" min="40" max="80" value="55" step="5" oninput="updateSliders()"><span class="sv" id="sv-ruby">0.55em</span></div>
+          <div class="srow"><label>本文行間</label><input type="range" id="slh" min="22" max="42" value="28" step="2" oninput="updateSliders()"><span class="sv" id="sv-lh">2.8</span></div>
+          <div class="srow"><label>本文文字サイズ</label><input type="range" id="sfs" min="12" max="24" value="16" step="1" oninput="updateSliders()"><span class="sv" id="sv-fs">16px</span></div>
+        </div>
+        <button class="run" id="rbtn" onclick="runFurigana()" disabled>📖 ふりがなを付ける</button>
+      </div>
+    </div>
+  </div>
+  <div class="rpanel">
+    <div class="panel" style="margin-bottom:0">
+      <div class="ptbar">
+        <div class="phi" style="background:#EDFAED;font-size:13px">👁️</div>
+        <span style="font-size:13px;font-weight:700;color:var(--n700)">プレビュー</span>
+        <span class="pinfo" id="pinfo"></span>
+        <button class="pbtn" onclick="window.print()">🖨️ A4印刷</button>
+      </div>
+      <div class="parea">
+        <div class="empty" id="estate">
+          <div class="ei">📄</div>
+          <p>左にテキストを入力して</p>
+          <p>「ふりがなを付ける」を押してください</p>
+        </div>
+        <div id="rout"></div>
+      </div>
+      <div class="stats" id="stats" style="display:none">
+        <div class="stat"><div class="v" id="st-total">—</div><div class="l">総漢字数</div></div>
+        <div class="stat"><div class="v" id="st-ruby">—</div><div class="l">ふりがな付き</div></div>
+        <div class="stat"><div class="v" id="st-skip">—</div><div class="l">既習スキップ</div></div>
+        <div class="stat"><div class="v" id="st-rate">—</div><div class="l">付与率</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
+<script>
+const GRADE_MAP=(()=>{
+  const raw={
+    1:"一右雨円王音下火花貝学気九休玉金空月犬見五口校左三山子四糸字耳七車手十出女小上森人水正生青夕石赤千川先早草足村大男竹中虫町天田土二日入年白八百文木本名目立力林六",
+    2:"引羽雲園遠何科夏家歌画回会海絵外角楽活間丸岩顔汽記帰弓牛魚京強教近兄形計元言原戸古午後語工公広交光考行高黄合国黒今才細作算止市矢姉思紙寺自時室社弱首秋週春書少場色食心新親図数西声星晴切雪船線前組走多太体台地池知茶昼長鳥朝直通弟店点電刀冬当東答頭同道読内南肉馬売買麦半番父風分聞米歩母方北毎妹万明鳴毛門夜野友用曜来里理話",
+    3:"悪安暗医委意育員院飲運泳駅央横屋温化荷開界階寒感漢館岸起期客究急級宮球去橋業曲局銀区苦具君係軽血決研県庫湖向幸港号根祭皿仕死使始指歯詩次事持式実写者主守取酒受州拾終習集住重宿所暑助昭消商章勝乗植申身神真深進世整昔全想相送息速族他打対待代第題炭短談着注柱丁帳調追定庭笛鉄転都度投豆島湯登等動童農波配倍箱畑発反坂板皮悲美鼻筆氷表秒品負部服福物平返勉放味命面問役薬由油有遊予様洋葉陽落流旅両緑礼列練路和",
+    4:"愛案以衣位囲胃印英栄塩億加果貨課芽改械害街各覚完官管関観願希季旗器機議求泣救給挙漁共協鏡競極訓軍郡径型景芸欠結建健験固功好候航康告差菜最材昨刷察参産散残士氏史司試児治辞失借種周祝順初松笑唱焼象照賞信成省清静席積折節説浅戦選然争倉巣束側続卒孫帯隊達単置仲貯兆腸低底的典伝徒努灯働特得毒熱念敗梅博飯費必票標不付府辺変便包法望牧末満未脈民無約勇要養浴利陸料良量輪類令冷例歴連老労録",
+    5:"圧移因永営衛易益液演応往恩仮価河過賀快解格確額刊幹慣眼基寄規技義逆久旧居許境均禁句型経潔件険検限現減故個護効厚耕鉱構興講混査再災妻採際在財罪雑酸賛支志枝師資飼示似識質舎謝授修術準序招証象条状常情職織績責接設絶祖素総造像増則測属率損退貸態団断築張提程適統導銅徳独任燃能破犯判版比肥非費備評貧布婦富武復複仏粉編弁保墓報豊防貿暴務夢迷綿輸余容略留領",
+    6:"異遺域宇映延沿我灰拡閣割株干巻看簡危机揮貴疑吸供胸郷勤筋系敬警劇激穴絹権憲源厳己呼誤后孝皇紅降鋼刻穀骨困砂座済裁策冊蚕至私姿視詞誌磁射捨尺若樹収宗就衆従縦縮熟純処署諸除将傷障城蒸針仁垂推寸盛聖誠舌宣専泉洗染善奏窓創装層操蔵臓存尊退択拓担探誕段暖値宙忠著庁頂潮賃痛展討党糖届難乳認納脳派拝背肺俳班晩否批秘腹奮並陛閉片補暮宝訪亡忘棒枚幕密盟模訳郵優幼欲翌乱卵覧裏律臨朗論"
+  };
+  const m={};
+  for(const [g,s] of Object.entries(raw)) for(const c of s) m[c]=+g;
+  return m;
+})();
+
+const GRADE_DESCS=[
+  "📕 総ルビ：全ての漢字にふりがなを振ります（外国籍児童・1年生以下に最適）",
+  "📗 1年生向け：1年で習う漢字にはふりがなを振らず、2年以上の漢字だけ振ります",
+  "📘 2年生向け：1〜2年で習う漢字にはふりがなを振らず、3年以上の漢字だけ振ります",
+  "📙 3年生向け：1〜3年で習う漢字にはふりがなを振らず、4年以上の漢字だけ振ります",
+  "📘 4年生向け：1〜3年で習う漢字にはふりがなを振らず、4年以上の漢字だけ振ります",
+  "📒 5年生向け：1〜4年で習う漢字にはふりがなを振らず、5年以上の漢字だけ振ります",
+  "📓 6年生向け：1〜5年で習う漢字にはふりがなを振らず、6年以上の漢字だけ振ります",
+  "📔 中学生向け：1〜6年で習う漢字にはふりがなを振らず、中学以上の漢字だけ振ります"
+];
+
+const SAMPLES={
+  1:"あさ、たろうくんは がっこうへ いきました。みちに きれいな はなが さいていました。「きょうは いいてんきだね」と ともだちに いいました。",
+  2:"太陽は東から昇り、西に沈みます。これは地球が自転しているためです。地球は24時間かけて一回転しており、太陽の光が当たっている側が昼、反対側が夜になります。",
+  3:"江戸時代、日本では農業が経済の中心でした。農民たちは米を作り、年貢として藩に納めました。商人や職人も都市に集まり、独自の文化が発展していきました。",
+  4:"日本に来たばかりで、漢字の読み方がまだわかりません。学校で友達をたくさん作りたいです。給食の時間がとても楽しくて、特にカレーライスが好きです。先生、よろしくお願いします。"
+};
+
+let tokenizer=null;
+let currentGrade=4;
+let currentMode='total';
+
+function initKuromoji(){
+  kuromoji.builder({dicPath:'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict'})
+    .build((err,tok)=>{
+      if(err){
+        document.getElementById('lmsg').textContent='⚠️ 辞書の読み込みに失敗しました';
+        document.getElementById('lsub').textContent='ネットワーク接続を確認して再読み込みしてください：'+err.message;
+        return;
+      }
+      tokenizer=tok;
+      document.getElementById('loader').style.display='none';
+      document.getElementById('rbtn').disabled=false;
+    });
+}
+
+function kata2hira(s){return s.replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));}
+
+function isKanji(c){const code=c.charCodeAt(0);return(code>=0x4E00&&code<=0x9FFF)||(code>=0x3400&&code<=0x4DBF)||(code>=0xF900&&code<=0xFAFF);}
+
+function needsRuby(surface,grade){
+  const kanjis=[...surface].filter(isKanji);
+  if(kanjis.length===0) return false;
+  if(grade===0) return true;
+  for(const k of kanjis){
+    const kg=GRADE_MAP[k];
+    if(kg===undefined){if(grade<=7) return true;}
+    else if(kg>=grade) return true;
+  }
+  return false;
+}
+
+function runFurigana(){
+  const text=document.getElementById('itxt').value.trim();
+  if(!text||!tokenizer) return;
+  const tokens=tokenizer.tokenize(text);
+  let html='',totalKanji=0,rubyCount=0,skipCount=0;
+
+  for(const tok of tokens){
+    const surf=tok.surface_form;
+    const read=tok.reading;
+    const hasKanji=[...surf].some(isKanji);
+    if(hasKanji&&read&&read!=='*'){
+      const kc=[...surf].filter(isKanji).length;
+      totalKanji+=kc;
+      const should=needsRuby(surf,currentGrade);
+      if(should){
+        rubyCount+=kc;
+        const hira=kata2hira(read);
+        if(hira===surf){html+=esc(surf);}
+        else{html+=`<ruby>${esc(surf)}<rt>${esc(hira)}</rt></ruby>`;}
+      } else {
+        skipCount+=kc;
+        html+=esc(surf);
+      }
+    } else {
+      html+=esc(surf);
+    }
+  }
+
+  document.getElementById('estate').style.display='none';
+  const rout=document.getElementById('rout');
+  rout.style.display='block';
+  rout.innerHTML=html;
+  updateSliders();
+  const rate=totalKanji>0?Math.round(rubyCount/totalKanji*100):0;
+  document.getElementById('stats').style.display='flex';
+  document.getElementById('st-total').textContent=totalKanji;
+  document.getElementById('st-ruby').textContent=rubyCount;
+  document.getElementById('st-skip').textContent=skipCount;
+  document.getElementById('st-rate').textContent=rate+'%';
+  document.getElementById('pinfo').textContent=`漢字 ${totalKanji}字・ふりがな ${rubyCount}個`;
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function setGrade(g){
+  currentGrade=g;
+  document.querySelectorAll('.gb').forEach(b=>b.classList.toggle('on',+b.dataset.g===g));
+  document.getElementById('gdesc').textContent=GRADE_DESCS[g];
+}
+
+function setMode(m){
+  currentMode=m;
+  document.getElementById('mb-total').classList.toggle('on',m==='total');
+  document.getElementById('mb-para').classList.toggle('on',m==='para');
+}
+
+function updateSliders(){
+  const rs=document.getElementById('sruby').value;
+  const lh=document.getElementById('slh').value;
+  const fs=document.getElementById('sfs').value;
+  const rsEm=(rs/100).toFixed(2)+'em';
+  const lhVal=(lh/10).toFixed(1);
+  document.getElementById('sv-ruby').textContent=rsEm;
+  document.getElementById('sv-lh').textContent=lhVal;
+  document.getElementById('sv-fs').textContent=fs+'px';
+  const rout=document.getElementById('rout');
+  rout.style.fontSize=fs+'px';
+  rout.style.lineHeight=lhVal;
+  rout.querySelectorAll('rt').forEach(rt=>rt.style.fontSize=rsEm);
+}
+
+function setSample(n){document.getElementById('itxt').value=SAMPLES[n];}
+
+window.addEventListener('DOMContentLoaded',initKuromoji);
+</script>
+</body>
+</html>
